@@ -1,32 +1,46 @@
+# Estas librerías las necesitamos para el METER
 from PIL import Image
 Image.CUBIC = Image.BICUBIC
+# Esto lo necesitamos para la interfaz gráfica
 from tkinter import *
-from ttkbootstrap.dialogs import Messagebox as MSG
 import ttkbootstrap as tb 
-import time
+from ttkbootstrap.dialogs import Messagebox as MSG
 from ttkbootstrap.toast import ToastNotification
+# Esto lo necesitamos para el sleep() y contar el tiempo
+import time
+# Esto lo necesitamos para reproducir el sonido
 import pygame
+# Esto lo necesitamos para encontrar el path, y lograr que se encuentre
+# La ruta del archivo
 import os
 
-script_directory = os.path.dirname(os.path.realpath(__file__))
-ruta_audio = os.path.join(script_directory, "media", "audio.wav")
 
+# Para obtener la ruta desde donde corremos
+script_directory = os.path.dirname(os.path.realpath(__file__))
+# Para hacer un join de las rutas
+ruta_audio = os.path.join(script_directory, "media", "audio.wav")
+print(ruta_audio)
+
+# Definición de tema, y configuraciones
 root = tb.Window(themename="cyborg")
 root.title("Temporizador APP")
 root.geometry("650x600")
 
-
+# Variables por defectos
 temporizador_en_ejecucion = False
 total_t = 0
 destroyer = False
+
 # Sonido función
 def reproducir_sonido(ruta):
     pygame.mixer.init()
     pygame.mixer.music.load(ruta)
+    pygame.mixer.music.set_volume(0.1)
     pygame.mixer.music.play()
 # Funciones
+    # Cargar la hora y chequear que sean integers
 def carga_hora():
-    global temporizador_en_ejecucion, total_t
+    global temporizador_en_ejecucion, total_t, total_start
     try:
         if entry_hour.get():
             hour = int(entry_hour.get())
@@ -45,43 +59,46 @@ def carga_hora():
             # Bucle que ocurre solo si el tiempo total es mayor a 0
             ToastNotification(title="Carga de Valores",
                             message="La carga se efectuó",
-                            duration=3000, # Without time doesn't disappear if you don't click
+                            duration=3000, # Tiempo hasta que se desaparezca el toast
                             alert=True,
                             position=(20,50,'sw')
                             ).show_toast()
+            total_start = total_t
         
     except:
         MSG.show_error(title="Error", message="Formato de hora erronea")
         
     
-
+# El negocio es que se corra el while en bucle mientras 
+# Se ejecuta el temporizador
 def ejecutar_temporizador():
-    global temporizador_en_ejecucion, total_t, destroyer
+    global temporizador_en_ejecucion, total_t, destroyer, total_start
     temporizador_en_ejecucion = True
-    total_start = total_t
     try:
-        while total_t>=0:
+        while total_t >=0 and total_start>0:
+            if destroyer:
+                break
             clock.configure(amountused=int((total_start-total_t)/total_start * 100))
             horas, remainder = divmod(total_t, 3600)
             minutos, segundos = divmod(remainder, 60)
             clock.configure(subtext=f'{horas}:{minutos}:{segundos}')
-            root.update()
+            root.update() # Esta parte es clave para que se vaya actualizando
             time.sleep(1)
-            total_t -= 1
-            if destroyer:
-                break
-        
+
+            if temporizador_en_ejecucion:
+                total_t -= 1
+            
         
         if total_t == -1 and temporizador_en_ejecucion == True :
             reproducir_sonido(ruta_audio)
 
-        if not temporizador_en_ejecucion:
+        if not temporizador_en_ejecucion and not destroyer:
             clock.configure(amountused=0)
             clock.configure(subtext="00:00:00")
         else:
             temporizador_en_ejecucion = False
     except:
-        MSG.show_error(title="Error", message="No ha cargado los valores")
+        MSG.show_error(title="Error", message="Error de bucle")
 
 def detener_temporizador():
     global temporizador_en_ejecucion
@@ -93,9 +110,10 @@ def reanudar_temporizador():
         ejecutar_temporizador()
 
 def reset_temporizador():
-    global temporizador_en_ejecucion, total_t
+    global temporizador_en_ejecucion, total_t, total_start
     temporizador_en_ejecucion = False
     total_t = 0
+    total_start = 0
     clock.configure(amountused=0)
     clock.configure(subtext="00:00:00")
 
@@ -120,7 +138,8 @@ def salir():
     except Exception as e:
         print(f'Error al salir {e}')
 
-
+# Zona gráfica
+        
 frame_prin = tb.Frame(root)
 frame_prin.pack(pady=40,padx=5, anchor=CENTER)
 # Frame reloj
