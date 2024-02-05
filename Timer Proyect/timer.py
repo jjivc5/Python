@@ -134,6 +134,7 @@ def salir():
         if mb == "Yes":
             destroyer=True
             root.destroy()
+            exit(1)
             
     except Exception as e:
         print(f'Error al salir {e}')
